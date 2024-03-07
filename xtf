@@ -1,0 +1,107 @@
+#!/bin/bash
+export POSIXLY_CORRECT=yes
+
+#
+# Author: Jaroslav Vehovsky
+# Xlogin: xvehov01
+# Project: IOS_project1
+# File: xtf
+# Created: 03/03/2024
+#
+
+filter_after=""
+filter_before=""
+filter_currency=""
+command=""
+user=""
+log_list=""
+
+main() {
+  # No arguments provided, show help
+  if [ $# -eq 0 ]; then
+    help
+    exit
+  fi
+
+  # Handle --help command
+  if [ "$1" = "--help" ]; then
+        help
+        exit
+  fi
+
+  # Handle arguments
+  while getopts ":ha:b:c:" opts; do
+    case $opts in
+      h)
+        help
+        exit
+        ;;
+      a)
+        filter_after="$OPTARG"
+        validate_datetime "$filter_after"
+        ;;
+      b)
+        filter_before="$OPTARG"
+        validate_datetime "$filter_before"
+        ;;
+      c)
+        filter_currency="$OPTARG"
+        ;;
+      \?)
+        echo "Invalid option -$OPTARG" >&2
+        help
+        exit 1
+        ;;
+      :)
+        echo "-$OPTARG requires an argument" >&2
+        help
+        exit 1
+        ;;
+    esac
+  done
+
+  # Shift already parsed arguments
+  shift $((OPTIND - 1))
+
+  # Handle COMMAND, USER and LOG arguments
+  if [ $# -lt 3 ]; then
+      echo "Not enough arguments" >&2
+      help
+      exit 1
+  fi
+
+  command="$1"
+  user="$2"
+  shift 2
+  log_list="$@"
+}
+
+help() {
+   cat <<EOF
+  Usage: $0 [-h|--help] [FILTER] [COMMAND] USER LOG [LOG2 [...]
+
+  COMMAND:
+    list            List records for specified user
+    list-currency   List all currencies in users account
+    status          Show account balance
+    profit          Show account balance with profit
+
+  FILTER:
+    -a DATETIME     Show only records after this date. DATETIME format YYYY-MM-DD HH:MM:SS
+    -b DATETIME     Show only records before this date. DATETIME format YYYY-MM-DD HH:MM:SS
+    -c CURRENCY     Show only records of specified currency
+
+  -h --help         Get help info
+EOF
+}
+
+validate_datetime() {
+  datetime_regex="^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$"
+  if ! printf '%s\n' "$@" | grep -Eq "$datetime_regex"; then
+    printf "Invalid datetime format\n" >&2
+    printf "Use --help for help\n" >&2
+    exit 1
+  fi
+}
+
+main "$@"
