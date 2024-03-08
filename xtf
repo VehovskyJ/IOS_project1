@@ -14,7 +14,7 @@ filter_before=""
 filter_currency=""
 command=""
 user=""
-log_list=()
+log_data=""
 
 main() {
   # No arguments provided, show help
@@ -75,15 +75,17 @@ main() {
     command="list"
     user="$1"
     shift 1
-    log_list=("$@")
   else
     command="$1"
     user="$2"
     shift 2
-    log_list=("$@")
   fi
 
+  for file in "$@"; do
+    read_data "$file"
+  done
 
+  printf "%s\n" "$log_data"
 }
 
 help() {
@@ -110,6 +112,33 @@ validate_datetime() {
   if ! printf '%s\n' "$@" | grep -Eq "$datetime_regex"; then
     printf "Invalid datetime format\n" >&2
     printf "Use --help for help\n" >&2
+    exit 1
+  fi
+}
+
+read_data() {
+  file="$1"
+  # Check if file exists
+  if [ -f "$file" ]; then
+    # Read gzip file
+    if echo "$file" | grep -q "\.gz$"; then
+      zcat "$file" || {
+        # print gzip error and exit
+        exit 1
+      } | while IFS= read -r line; do
+        all_data="$all_data$line
+"
+      done
+    # Read text file
+    else
+      while IFS= read -r line; do
+        # shellcheck disable=SC2031
+        log_data="$log_data$line
+"
+      done < "$file"
+    fi
+  else
+    echo "File '$file' not found" >&2
     exit 1
   fi
 }
