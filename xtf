@@ -14,7 +14,7 @@ filter_before=""
 filter_currency=""
 command=""
 user=""
-log_list=""
+log_list=()
 
 main() {
   # No arguments provided, show help
@@ -25,8 +25,8 @@ main() {
 
   # Handle --help command
   if [ "$1" = "--help" ]; then
-        help
-        exit
+    help
+    exit
   fi
 
   # Handle arguments
@@ -63,17 +63,27 @@ main() {
   # Shift already parsed arguments
   shift $((OPTIND - 1))
 
-  # Handle COMMAND, USER and LOG arguments
-  if [ $# -lt 3 ]; then
-      echo "Not enough arguments" >&2
-      help
-      exit 1
+  # Less than 2 arguments result in error
+  if [ $# -lt 2 ]; then
+    echo "Not enough arguments" >&2
+    help
+    exit 1
   fi
 
-  command="$1"
-  user="$2"
-  shift 2
-  log_list="$@"
+  # Handle COMMAND, USER and LOG arguments
+  if [ $# -lt 3 ]; then
+    command="list"
+    user="$1"
+    shift 1
+    log_list=("$@")
+  else
+    command="$1"
+    user="$2"
+    shift 2
+    log_list=("$@")
+  fi
+
+
 }
 
 help() {
