@@ -126,7 +126,8 @@ read_data() {
         # print gzip error and exit
         exit 1
       } | while IFS= read -r line; do
-        all_data="$all_data$line
+        # shellcheck disable=SC2030
+        log_data="$log_data$line
 "
       done
     # Read text file
