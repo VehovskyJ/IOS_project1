@@ -118,26 +118,18 @@ validate_datetime() {
 
 read_data() {
   file="$1"
+  data=""
   # Check if file exists
   if [ -f "$file" ]; then
     # Read gzip file
     if echo "$file" | grep -q "\.gz$"; then
-      zcat "$file" || {
-        # print gzip error and exit
-        exit 1
-      } | while IFS= read -r line; do
-        # shellcheck disable=SC2030
-        log_data="$log_data$line
-"
-      done
+      data=$(zcat "$file" 2>/dev/null | grep "^$user;")
     # Read text file
     else
-      while IFS= read -r line; do
-        # shellcheck disable=SC2031
-        log_data="$log_data$line
-"
-      done < "$file"
+      data=$(grep "^$user;" "$file")
     fi
+    log_data="$log_data$data
+"
   else
     echo "File '$file' not found" >&2
     exit 1
