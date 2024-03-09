@@ -117,7 +117,7 @@ main() {
         for (currency in sum) {
           printf "%s : %.4f\n", currency, sum[currency]
         }
-      }')
+      }' | sort)
 
     printf "%s\n" "$currency_sum"
     exit 0
@@ -142,7 +142,7 @@ main() {
           }
           printf "%s : %.4f\n", currency, balance
         }
-      }')
+      }' | sort)
 
     printf "%s\n" "$currency_sum"
     exit 0
