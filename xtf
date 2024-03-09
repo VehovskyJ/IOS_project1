@@ -85,7 +85,74 @@ main() {
     read_data "$file"
   done
 
-  printf "%s\n" "$log_data"
+  # Removes empty lines
+  log_data=$(echo "$log_data" | grep -v '^$')
+
+  # Handle different commands
+  case "$command" in
+  list)
+    # Handle list command
+    # Lists all log entries for specified user
+    printf "%s" "$log_data"
+    exit 0
+    ;;
+  list-currency)
+    # Handle list-currency
+    # Lists all the currencies present in users account sorted alphabetically
+    currencies=$(echo "$log_data" | awk -F ';' '
+      {
+        print $3
+      }' | sort | uniq)
+
+    printf "%s\n" "$currencies"
+    exit 0
+    ;;
+  status)
+    # Handle status
+    # Lists all the currencies present is users profile together with the balance
+    currency_sum=$(echo "$log_data" | awk -F ';' '
+      {
+        sum[$3]+=$4
+      } END {
+        for (currency in sum) {
+          printf "%s : %.4f\n", currency, sum[currency]
+        }
+      }')
+
+    printf "%s\n" "$currency_sum"
+    exit 0
+    ;;
+  profit)
+    # Handle profit
+    # Lists all the currencies present is users profile together with the balance and profit
+
+    # Check if $XTF_PROFIT is set, if not set it to 20%
+    if [ -z "$XTF_PROFIT" ]; then
+      XTF_PROFIT=20
+    fi
+
+    currency_sum=$(echo "$log_data" | awk -F ';' -v profit="$XTF_PROFIT" '
+      {
+        sum[$3]+=$4
+      } END {
+        for (currency in sum) {
+          balance = sum[currency];
+          if (balance > 0) {
+            balance *= 1 + (profit / 100);
+          }
+          printf "%s : %.4f\n", currency, balance
+        }
+      }')
+
+    printf "%s\n" "$currency_sum"
+    exit 0
+    ;;
+  *)
+    echo "Invalid command" >&2
+    exit 1
+    ;;
+  esac
+
 }
 
 help() {
