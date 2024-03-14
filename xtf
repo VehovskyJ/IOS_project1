@@ -92,11 +92,26 @@ main() {
   # Removes empty lines
   log_data=$(echo "$log_data" | grep -v '^$')
 
-  # Check if currency symbol is 3 characters long
-  currency_invalid=$(echo "$log_data" | awk -F ';' 'length($3) != 3')
-  if [ -n "$currency_invalid" ]; then
-      echo "Log data are not valid" >&2
-      exit 1
+  # Validate log data
+  if  ! echo "$log_data" | awk -F ';' '
+    BEGIN {
+      passed = 1
+    } {
+      if (length($3) != 3 || $2 !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$/ || $4 !~ /^[-+]?[0-9]*\.?[0-9]+$/) {
+        passed = 0
+        exit
+      }
+    }
+    END {
+      if (passed) {
+        exit 0
+      } else {
+        exit 1
+      }
+    }
+  ' ; then
+    echo "Log data are invalid" >&2
+    exit 1
   fi
 
   # If $filter_currency was set, filter $log_data by currency
