@@ -20,7 +20,6 @@ main() {
   # No arguments provided, show help
   if [ $# -eq 0 ]; then
     echo "Not enough arguments" >&2
-    help
     exit 1
   fi
 
@@ -71,7 +70,6 @@ main() {
   # Less than 2 arguments result in error
   if [ $# -lt 2 ]; then
     echo "Not enough arguments" >&2
-    help
     exit 1
   fi
 
