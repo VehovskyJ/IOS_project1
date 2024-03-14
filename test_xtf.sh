@@ -9,8 +9,34 @@
 #     (3) Execute this command in "xtf" directory:   ./test_xtf.sh
 #     (4) If any test fails, it will output the difference between the expected result and your output with diff command into the diff folder
 #     (4) Debug :D
+#     (5) You can check for updates using --update, if a newer verison exists, it will be downloaded and it will replace the test_xtf.sh file
 
 
+update(){
+    local url=${1}
+    username=$(echo "$url" | sed -n 's/https:\/\/gist\.github\.com\/\([^\/]*\)\/.*/\1/p')
+    content=$(wget -q -O - "$url")
+    extracted_link="https://gist.githubusercontent.com"$(echo "$content" | grep "<a[^>]*href=\"/$username.*.sh\"" | sed 's/.*href="//;s/".*//')
+    script=$(wget -q -O - "$extracted_link")
+    is_update=$(diff "$0" <(echo "$script") > /dev/null; echo $?)
+    if [ "$is_update" = "0" ]; then
+        echo "You are on the newest version"
+        exit 1
+    fi
+    if [ -w "$0" ];then
+        echo "$script" > "$0"
+        echo "Updated sucessfully."
+    else
+        echo "Couldn't write to file"
+        exit 1
+    fi
+
+    exit 0
+}
+
+if [ "$1" = "--update" ]; then
+    update "https://gist.github.com/dzives/bcb93e43e6643f86e8225d35f6817391" # just enter the url of the gist
+fi
 
 # color codes
 GREEN='\033[0;32m'
@@ -24,6 +50,8 @@ correct=0
 # compile maze.c just in case
 
 rm -rf diff
+
+
 
 run_test() {
     local expected_output=${1}
@@ -57,7 +85,7 @@ run_test() {
 
 
 # tests
-echo -e "Trader1;2024-01-15 15:30:42;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;USD;-3000.0000\nCryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537\n" > cryptoexchange.log
+echo -e "Trader1;2024-01-15 15:30:42;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;USD;-3000.0000\nCryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537" > cryptoexchange.log
 
 # 0
 args=("Trader1" "cryptoexchange.log")
@@ -136,10 +164,8 @@ unset XTF_PROFIT
 
 # 10
 echo Příklad s více logy
-echo -e "Trader1;2024-01-15 15:30:42;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;USD;-3000.0000\n" > cryptoexchange-1.log
-echo -e "CryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\n
-Trader1;2024-01-20 11:43:02;ETH;1.9417\n
-Trader1;2024-01-22 09:17:40;ETH;10.9537\n" > cryptoexchange-2.log
+echo -e "Trader1;2024-01-15 15:30:42;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;USD;-3000.0000" > cryptoexchange-1.log
+echo -e "CryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537" > cryptoexchange-2.log
 gzip -c cryptoexchange-2.log > cryptoexchange-2.log.gz
 rm cryptoexchange-2.log
 
@@ -337,8 +363,32 @@ run_test "" "${args[@]}"
 args=("-b" "2024-01-25 15:29:29" "-b" "2024-01-25 16:29:29" "Trader1" "cryptoexchange.log")
 run_test "" "${args[@]}"
 
+echo "Testing invalid files"
 
+# 38 invalid date in first entry
+echo -e "Trader1;2024-01-1515:30:42;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;USD;-3000.0000\nCryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537" > invalid_date.log
+args=("list" "Trader1" "invalid_date.log")
+run_test "" "${args[@]}"
 
+# 39 missing date in first entry
+echo -e "Trader1;;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;USD;-3000.0000\nCryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537" > invalid_date.log
+args=("list" "Trader1" "invalid_date.log")
+run_test "" "${args[@]}"
+
+# 40 missing name in second entry
+echo -e "Trader1;2024-01-15 15:30:42;EUR;-2000.0000\n;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;USD;-3000.0000\nCryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537" > missing_name.log
+args=("list" "Trader1" "missing_name.log")
+run_test "" "${args[@]}"
+
+# 41 missing currency in third entry
+echo -e "Trader1;2024-01-15 15:30:42;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;-9.8734\nTrader1;2024-01-16 18:06:32;;-3000.0000\nCryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537" > missing_currency.log
+args=("list" "Trader1" "missing_currency.log")
+run_test "" "${args[@]}"
+
+# 42 missing value in second entry
+echo -e "Trader1;2024-01-15 15:30:42;EUR;-2000.0000\nTrader2;2024-01-15 15:31:12;BTC;\nTrader1;2024-01-16 18:06:32;USD;-3000.0000\nCryptoWiz;2024-01-17 08:58:09;CZK;10000.0000\nTrader1;2024-01-20 11:43:02;ETH;1.9417\nTrader1;2024-01-22 09:17:40;ETH;10.9537" > missing_value.log
+args=("list" "Trader1" "missing_value.log")
+run_test "" "${args[@]}"
 
 
 # print test results
@@ -357,3 +407,7 @@ rm cryptoexchange-2.log.gz
 rm cryptoexchange-1.log
 rm "crypto exchange.log"
 rm "crypto exchange.log.gz"
+rm "invalid_date.log"
+rm "missing_name.log"
+rm "missing_currency.log"
+rm "missing_value.log"
