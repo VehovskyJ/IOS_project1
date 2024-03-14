@@ -46,6 +46,10 @@ main() {
         ;;
       c)
         filter_currency="$OPTARG"
+        if [ ! ${#filter_currency} -eq 3 ]; then
+          echo "Currency symbol must be three characters long" >&2
+          exit 1
+        fi
         ;;
       \?)
         echo "Invalid option -$OPTARG" >&2
@@ -87,6 +91,23 @@ main() {
 
   # Removes empty lines
   log_data=$(echo "$log_data" | grep -v '^$')
+
+  # Check if currency symbol is 3 characters long
+  currency_invalid=$(echo "$log_data" | awk -F ';' 'length($3) != 3')
+  if [ -n "$currency_invalid" ]; then
+      echo "Log data are not valid" >&2
+      exit 1
+  fi
+
+  # If $filter_currency was set, filter $log_data by currency
+  if [ -n "$filter_currency" ]; then
+      log_data=$(echo "$log_data" | awk -F ';' -v currency="$filter_currency" '$3 == currency')
+  fi
+  
+  # If $log_data is empty, stop execution
+  if [ -z "$log_data" ]; then
+      exit 0
+  fi
 
   # Handle different commands
   case "$command" in
