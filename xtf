@@ -19,8 +19,9 @@ log_data=""
 main() {
   # No arguments provided, show help
   if [ $# -eq 0 ]; then
+    echo "Not enough arguments" >&2
     help
-    exit
+    exit 1
   fi
 
   # Handle --help command
