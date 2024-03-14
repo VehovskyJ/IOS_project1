@@ -116,7 +116,7 @@ main() {
 
   # If $filter_currency was set, filter $log_data by currency
   if [ -n "$filter_currency" ]; then
-      log_data=$(echo "$log_data" | awk -F ';' -v currency="$filter_currency" '$3 == currency')
+    log_data=$(echo "$log_data" | awk -F ';' -v currency="$filter_currency" '$3 == currency')
   fi
 
   # If $filter_after was set, filter $log_data by date
@@ -131,7 +131,7 @@ main() {
 
   # If $log_data is empty, stop execution
   if [ -z "$log_data" ]; then
-      exit 0
+    exit 0
   fi
 
   # Handle different commands
