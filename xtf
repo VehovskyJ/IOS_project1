@@ -118,7 +118,17 @@ main() {
   if [ -n "$filter_currency" ]; then
       log_data=$(echo "$log_data" | awk -F ';' -v currency="$filter_currency" '$3 == currency')
   fi
-  
+
+  # If $filter_after was set, filter $log_data by date
+  if [ -n "$filter_after" ]; then
+    log_data=$(echo "$log_data" | awk -F ';' -v date_a="$filter_after" '$2 > date_a')
+  fi
+
+  # If $filter_before was set, filter $log_data by date
+  if [ -n "$filter_before" ]; then
+    log_data=$(echo "$log_data" | awk -F ';' -v date_b="$filter_before" '$2 < date_b')
+  fi
+
   # If $log_data is empty, stop execution
   if [ -z "$log_data" ]; then
       exit 0
